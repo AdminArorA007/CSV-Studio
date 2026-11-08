@@ -6,7 +6,6 @@ A fast, lightweight CSV editor for Windows + XAMPP — built for people who mana
 
 Tested in real life with 100s of CSVs + 1000s of images. Sturdy, not perfect — and that's the point. PRs welcome.
 
-[PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4) [License](https://img.shields.io/badge/License-MIT-green) [Status](https://img.shields.io/badge/Status-STURDY_BUILD-yellow)
 
 ## Why not Excel?
 
