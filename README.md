@@ -1,4 +1,4 @@
-# CSV Studio — v2.16 STURDY BUILD 🏆
+# CSV Studio — v0.9 STURDY BUILD 🏆
 
 A fast, lightweight CSV editor for Windows + XAMPP — built for people who manage **dozens of CSV files in nested folders** and are tired of Excel.
 
@@ -17,7 +17,7 @@ Tested in real life with 100s of CSVs + 1000s of images. Sturdy, not perfect —
 
 CSV Studio fixes all of that.
 
-## Features (v2.16)
+## Features (v0.9)
 
 ### 📁 File Explorer
 - Recursive folder tree, any drive/folder: `D:/`, `E:/`, `C:/Users/You/Pictures`
