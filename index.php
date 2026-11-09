@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CSV Studio v2.16 FINAL</title>
+<title>CSV Studio Sturdy Ver 1.1.2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <style>
@@ -8,7 +8,7 @@
 mark{background:#fef08a;padding:0 2px;border-radius:2px;font-weight:600}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:6px}
 .resizer{width:5px;cursor:col-resize;position:absolute;right:0;top:0;bottom:0}.resizer:hover{background:#6366f1}
-.tool{padding:5px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:12px}
+#saveToast{transition:opacity .3s, transform .3s} .tool{padding:5px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:12px}
 th.sortable{cursor:pointer;user-select:none} th.sortable:hover{background:#f1f5f9}
 .copy-btn{padding:2px 6px;font-size:11px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer}
 .save-dropdown{position:relative;display:inline-block}
@@ -22,11 +22,23 @@ th.sortable{cursor:pointer;user-select:none} th.sortable:hover{background:#f1f5f
 .folder-chip{padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fffbeb;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px}
 .manage-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .manage-input{flex:1;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px}
+
+/* v1.1.2 TRUE MAXIMIZE: the IMAGE grows, not just the box. Bottom strip replaces side panel when maximized. */
+#previewBox[data-max="1"]{width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;border-radius:0!important;padding:0!important;background:#000!important}
+#previewBox[data-max="1"] #imgPreview{width:100vw!important;height:calc(100vh - 52px)!important;max-width:none!important;max-height:none!important;object-fit:contain;background:#000;border-radius:0}
+#previewBox[data-max="1"] #imgPreviewPath{color:#cbd5e1;background:#000;margin:0;border-radius:0}
+#previewBox[data-max="1"] .preview-footnote{display:none}
+#slideshowBox[data-max="1"]{width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;border-radius:0!important}
+#slideshowBox[data-max="1"] #slideSidePanel{display:none!important}
+#slideshowBox[data-max="1"] #slideBottomBar{display:flex!important}
+#slideshowBox[data-max="1"] #slideImage{width:100%!important;height:calc(100vh - 108px)!important;max-width:none!important;max-height:none!important;object-fit:contain}
+#slideshowBox[data-max="1"] #slideStage{padding:0!important}
 </style></head>
 <body class="bg-slate-50 h-screen flex flex-col text-[13px]">
+<div id="saveToast" class="fixed top-3 left-1/2 -translate-x-1/2 z-[100] hidden items-center gap-2 bg-emerald-600 text-white text-[13px] font-medium px-4 py-2.5 rounded-full shadow-2xl"><i class="fa-solid fa-circle-check"></i><span id="saveToastText"></span></div>
 <header class="bg-white border-b px-3 py-2 flex items-center gap-2">
 <button id="toggleSidebar" class="p-2 border rounded"><i class="fa-solid fa-bars"></i></button>
-<i class="fa-solid fa-table-columns text-indigo-600"></i><b>CSV Studio</b><span class="text-slate-400">v2.16 FINAL</span>
+<i class="fa-solid fa-table-columns text-indigo-600"></i><b>CSV Studio</b><span class="text-slate-400">Sturdy Ver 1.1.2</span>
 <div class="ml-auto flex items-center gap-1">
 <div class="flex items-center border rounded overflow-hidden mr-2">
 <button id="fontDown" class="px-2 py-1.5 bg-white hover:bg-slate-50 text-xs">A-</button>
@@ -99,51 +111,42 @@ th.sortable{cursor:pointer;user-select:none} th.sortable:hover{background:#f1f5f
 
 <!-- Image Preview Modal -->
 <div id="imgPreviewModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-[60] p-4">
-<div class="bg-white rounded-lg p-3 max-w-4xl max-h-[90vh] overflow-auto relative" onclick="event.stopPropagation()">
+<div id="previewBox" class="bg-white rounded-lg p-3 max-w-4xl max-h-[90vh] overflow-auto relative" onclick="event.stopPropagation()">
+<button id="maxPreviewBtn" title="Maximize (fullscreen)" class="absolute top-2 right-12 w-8 h-8 rounded-full bg-black/60 text-white hover:bg-black/80"><i class="fa-solid fa-expand"></i></button>
 <button id="closePreviewBtn" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white hover:bg-black/80"><i class="fa-solid fa-xmark"></i></button>
 <img id="imgPreview" src="" class="max-w-full max-h-[80vh] mx-auto block rounded">
 <div id="imgPreviewPath" class="text-xs text-slate-600 mt-3 p-2 bg-slate-50 rounded truncate select-all"></div>
-<div class="mt-2 text-[11px] text-slate-400 text-center">Press Esc to close</div>
+<div class="preview-footnote mt-2 text-[11px] text-slate-400 text-center">Press Esc to close &nbsp;•&nbsp; Maximize for fullscreen</div>
 </div>
 </div>
 
 <!-- Slideshow Modal -->
 <div id="slideshowModal" class="fixed inset-0 bg-black/85 hidden items-center justify-center z-[62] p-2">
-<div class="bg-white rounded-xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden relative">
+<div id="slideshowBox" class="bg-white rounded-xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden relative">
 <div class="p-3 border-b flex justify-between items-center bg-slate-900 text-white">
 <div><span class="font-bold" id="slideTitle">Slideshow</span> <span id="slideCounter" class="text-slate-300 text-xs ml-3"></span></div>
-<div class="flex gap-2 items-center"><span class="text-[11px] text-slate-400">Esc to close, ← → to navigate</span><button id="closeSlideshow" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="flex gap-2 items-center"><span class="text-[11px] text-slate-400">Esc to close, ← → to navigate</span><button id="maxSlideshowBtn" title="Maximize (fullscreen)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-expand"></i></button><button id="closeSlideshow" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button></div>
 </div>
-<div class="flex flex-1 overflow-hidden">
-<div class="flex-1 bg-black flex items-center justify-center relative p-2">
+<div class="flex flex-1 overflow-hidden min-h-0">
+<div id="slideStage" class="flex-1 bg-black flex items-center justify-center relative p-2 min-w-0">
 <button id="slidePrev" class="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 text-white text-xl z-10"><i class="fa-solid fa-chevron-left"></i></button>
 <img id="slideImage" src="" class="max-w-full max-h-[68vh] object-contain">
 <button id="slideNext" class="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 text-white text-xl z-10"><i class="fa-solid fa-chevron-right"></i></button>
 </div>
-<div class="w-[340px] border-l bg-slate-50 overflow-auto p-3">
+<div id="slideSidePanel" class="w-[340px] border-l bg-slate-50 overflow-auto p-3">
 <div id="slideInfo" class="space-y-2 text-xs"></div>
 <div id="slidePath" class="mt-3 p-2 bg-white border rounded text-[11px] break-all"></div>
 </div>
 </div>
+<div id="slideBottomBar" class="hidden items-center gap-4 px-4 py-2 bg-slate-900 text-white text-[13px] overflow-x-auto whitespace-nowrap"><span id="slideInfoBottom" class="flex gap-5 items-center"></span><span id="slidePathBottom" class="ml-auto text-[11px] text-slate-400 truncate"></span></div>
 </div>
 </div>
 
-<!-- Image Browse Modal -->
-<div id="imageBrowseModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[55] p-4">
-<div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
-<div class="p-3 border-b space-y-2">
-<div class="flex justify-between items-center"><h3 class="font-bold text-[13px]"><i class="fa-solid fa-images text-indigo-600 mr-2"></i>Browse Images — Any Folder</h3><button id="closeImageBrowse" class="w-8 h-8 rounded-full hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div>
-<div class="flex gap-1 items-center flex-wrap"><input id="imgRootInput" placeholder="D:/web/csv/studio or D:/Trading/Charts" class="flex-1 min-w-[200px] px-2 py-1.5 border rounded text-xs font-mono"><button id="imgGoBtn" class="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs">Go</button><button id="imgUpBtn" class="px-2 py-1.5 border rounded text-xs"><i class="fa-solid fa-arrow-up"></i></button><button id="imgRecursiveToggle" class="px-2 py-1.5 border rounded text-xs bg-amber-50"><i class="fa-solid fa-sitemap mr-1"></i>Recursive: ON</button><button id="nativePickerBtn" class="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold"><i class="fa-brands fa-windows mr-1"></i> Windows Picker</button></div>
-<div class="text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded p-1.5">Tip: Click <b>Windows Picker</b> to use native Windows file dialog — file will be copied to current folder with correct D:/ slash format for XAMPP. No more typing paths!</div>
-<div class="flex gap-2 items-center text-[11px]"><input id="imgFilterInput" placeholder="Filter images by name (e.g. chart, i7, prescription)..." class="flex-1 px-2 py-1 border rounded text-xs"><span id="imgCount" class="text-slate-500 whitespace-nowrap">0 images</span></div>
-<div id="imgFolderChips" class="flex gap-1 flex-wrap max-h-[60px] overflow-auto"></div>
-</div>
-<div id="imageBrowseList" class="p-3 grid grid-cols-3 gap-3 flex-1 overflow-auto bg-slate-50 content-start"></div>
-<div class="p-2 border-t bg-white text-[11px] text-slate-500 flex justify-between"><span>Click image to insert path. You can browse ANY drive/folder: D:/, E:/, C:/Users/You/Pictures, etc.</span><span id="uploadStatus" class="text-emerald-600 font-bold"></span></div>
-</div>
-</div>
 <input type="file" id="nativeFileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.bmp" style="display:none">
 
+<script>
+window.addEventListener('error', function(ev){ var el=document.getElementById('tree'); if(el) el.innerHTML='<div class="p-3 text-xs text-red-600"><b>Script error — sidebar stopped:</b><br>'+String(ev.message||ev.error||'unknown')+'<br><br>Press Ctrl+R. If it repeats, tell me this exact message.</div>'; });
+</script>
 <script>
 let currentRoot='',currentFile=null,headers=[],rows=[],selected=new Set(),isEditing=false,sortState={col:-1,dir:1},fontSize=13,isDirty=false,editingRowIndex=null;
 let lastFocusedCell=null, currentBrowseTarget=null, imgBrowserRoot='D:/web/csv/studio', imgBrowserRecursive=true, allImagesCache=[];
@@ -156,9 +159,17 @@ function setDirty(d){isDirty=d; document.getElementById('dirtyFlag').classList.t
 function esc(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function truncatePath(p,len=20){ if(!p) return ''; if(p.length<=len) return p; return p.substring(0,len)+'...'; }
 function isImageColumn(h){ if(!h) return false; const s=h.toLowerCase().trim(); return ['picture','chart','image','photo','img','thumbnail','pic','album'].some(k=> s===k || s.includes(k)); }
+
+let toastTimer=null;
+function showToast(msg, ms=3500){ const el=document.getElementById('saveToast'); document.getElementById('saveToastText').textContent=msg; el.classList.remove('hidden'); el.classList.add('flex'); el.style.opacity='1'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>{ el.classList.add('hidden'); el.classList.remove('flex'); el.style.opacity='1'; },300); }, ms); }
+// FIX v1.1: only close on a REAL click on the backdrop (mousedown AND mouseup both on backdrop).
+// Drag-selecting text inside a modal and releasing outside used to close it. Now it never does.
+function backdropClickClose(modalId, closeFn){ const m=document.getElementById(modalId); if(!m) return; let downOnBackdrop=false; m.addEventListener('mousedown', e=>{ downOnBackdrop=(e.target.id===modalId); }); m.addEventListener('mouseup', e=>{ if(downOnBackdrop && e.target.id===modalId) closeFn(); downOnBackdrop=false; }); }
+function toggleMax(boxId, btn){ const box=document.getElementById(boxId); const isMax=box.dataset.max==='1'; box.dataset.max=isMax?'':'1'; btn.innerHTML=isMax?'<i class="fa-solid fa-expand"></i>':'<i class="fa-solid fa-compress"></i>'; }
 function isImagePath(v){ if(!v) return false; const s=v.trim().toLowerCase(); return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(s.split('?')[0]) || s.includes(':/'); }
 
 async function loadTree(root){
+ if(!document.getElementById('tree')) return;
  if(root) currentRoot=root; clearTree();
  try{
   const r=await fetch('api.php?action=list&root='+encodeURIComponent(currentRoot||''));
@@ -271,7 +282,7 @@ function renderTable(){
      const encoded = c?encodeURIComponent(c.trim()):'';
      const shortPath = c?truncatePath(c, 18):'<empty>';
      const thumb = c?'<img src="api.php?action=image&file='+encoded+'" class="img-thumb" loading="lazy" data-full-path="'+esc(c)+'" onclick="previewImageFromThumb(this)" onerror="this.style.display=\'none\'">' : '<div class="img-thumb bg-slate-100 flex items-center justify-center text-slate-300" style="width:36px;height:36px"><i class="fa-solid fa-image"></i></div>';
-     html+='<td class="border px-2 py-1" data-ri="'+ri+'" data-ci="'+ci+'" ondblclick="startEdit(this,'+ri+','+ci+')"><div class="img-cell">'+thumb+'<span class="truncate text-[11px] text-slate-600" title="'+esc(c)+'">'+esc(shortPath)+'</span><button class="browse-btn ml-auto" onclick="openImageBrowse('+ri+','+ci+')"><i class="fa-solid fa-folder-open"></i> Browse</button></div></td>';
+     html+='<td class="border px-2 py-1" data-ri="'+ri+'" data-ci="'+ci+'" ondblclick="startEdit(this,'+ri+','+ci+')"><div class="img-cell">'+thumb+'<span class="truncate text-[11px] text-slate-600" title="'+esc(c)+'">'+esc(shortPath)+'</span><button class="browse-btn ml-auto" onclick="openWindowsPicker('+ri+','+ci+')"><i class="fa-solid fa-folder-open"></i> Browse</button></div></td>';
    } else {
      html+='<td class="cell border px-2 py-1 min-w-[120px]" data-ri="'+ri+'" data-ci="'+ci+'" ondblclick="startEdit(this,'+ri+','+ci+')">'+esc(c)+'</td>';
    }
@@ -427,7 +438,7 @@ function applyManageCols(){
 document.getElementById('manageColsBtn').onclick=openManageColumns;
 document.getElementById('cancelManageCols').onclick=closeManageCols;
 document.getElementById('applyManageCols').onclick=applyManageCols;
-document.getElementById('manageColsModal').onclick=(e)=>{ if(e.target.id==='manageColsModal') closeManageCols(); };
+backdropClickClose('manageColsModal', closeManageCols);
 document.getElementById('addColInManage').onclick=()=>{
  const list=document.getElementById('manageColsList');
  const row=document.createElement('div'); row.className='manage-row';
@@ -470,7 +481,7 @@ document.getElementById('slideshowBtn').onclick=openSlideshow;
 document.getElementById('closeSlideshow').onclick=closeSlideshow;
 document.getElementById('slidePrev').onclick=()=> showSlide(slideshowIndex-1);
 document.getElementById('slideNext').onclick=()=> showSlide(slideshowIndex+1);
-document.getElementById('slideshowModal').onclick=(e)=>{ if(e.target.id==='slideshowModal') closeSlideshow(); };
+backdropClickClose('slideshowModal', closeSlideshow);
 
 // Add/Edit Row
 function openAddRowModal(){
@@ -480,7 +491,7 @@ function openAddRowModal(){
  headers.forEach((h,i)=>{
   const w=document.createElement('div'); const l=document.createElement('label'); l.className='block text-[12px] font-medium text-slate-600 mb-1'; l.textContent=h+(i===0?' (Entry)':'');
   const inp=document.createElement('input'); inp.className='w-full px-3 py-2 border border-slate-200 rounded-lg text-[13px]'; inp.dataset.col=i; inp.placeholder=h; if(i===0) inp.value=todayStr;
-  if(isImageColumn(h)){ const browse=document.createElement('button'); browse.type='button'; browse.className='mt-1 browse-btn'; browse.innerHTML='<i class="fa-solid fa-folder-open"></i> Browse / Windows Pick'; browse.onclick=()=>{ currentBrowseTarget={input: inp}; openImageBrowseModal(); }; w.appendChild(l); w.appendChild(inp); w.appendChild(browse); } else { w.appendChild(l); w.appendChild(inp); }
+  if(isImageColumn(h)){ const browse=document.createElement('button'); browse.type='button'; browse.className='mt-1 browse-btn'; browse.innerHTML='<i class="fa-solid fa-folder-open"></i> Windows Pick'; browse.onclick=()=>{ currentBrowseTarget={input: inp}; document.getElementById('nativeFileInput').click(); }; w.appendChild(l); w.appendChild(inp); w.appendChild(browse); } else { w.appendChild(l); w.appendChild(inp); }
   form.appendChild(w);
  });
  document.getElementById('addRowModal').classList.remove('hidden'); document.getElementById('addRowModal').classList.add('flex');
@@ -491,72 +502,36 @@ function openEditRow(ri){
  headers.forEach((h,i)=>{
   const w=document.createElement('div'); const l=document.createElement('label'); l.className='block text-[12px] font-medium text-slate-600 mb-1'; l.textContent=h;
   const inp=document.createElement('input'); inp.className='w-full px-3 py-2 border border-slate-200 rounded-lg text-[13px]'; inp.dataset.col=i; inp.value=row[i]||'';
-  if(isImageColumn(h)){ const browse=document.createElement('button'); browse.type='button'; browse.className='mt-1 browse-btn'; browse.innerHTML='<i class="fa-solid fa-folder-open"></i> Browse / Windows Pick'; browse.onclick=()=>{ currentBrowseTarget={input: inp}; openImageBrowseModal(); }; w.appendChild(l); w.appendChild(inp); w.appendChild(browse); } else { w.appendChild(l); w.appendChild(inp); }
+  if(isImageColumn(h)){ const browse=document.createElement('button'); browse.type='button'; browse.className='mt-1 browse-btn'; browse.innerHTML='<i class="fa-solid fa-folder-open"></i> Windows Pick'; browse.onclick=()=>{ currentBrowseTarget={input: inp}; document.getElementById('nativeFileInput').click(); }; w.appendChild(l); w.appendChild(inp); w.appendChild(browse); } else { w.appendChild(l); w.appendChild(inp); }
   form.appendChild(w);
  });
  document.getElementById('addRowModal').classList.remove('hidden'); document.getElementById('addRowModal').classList.add('flex');
 }
 function closeAddRowModal(){ document.getElementById('addRowModal').classList.add('hidden'); document.getElementById('addRowModal').classList.remove('flex'); editingRowIndex=null; }
 
-// Image browse
-async function openImageBrowse(ri,ci){ currentBrowseTarget={ri,ci, isTable:true}; openImageBrowseModal(); }
-async function openImageBrowseModal(){ document.getElementById('imageBrowseModal').classList.remove('hidden'); document.getElementById('imageBrowseModal').classList.add('flex'); document.getElementById('imgRootInput').value=imgBrowserRoot; loadImagesFromRoot(imgBrowserRoot); }
-function closeImageBrowseModal(){ document.getElementById('imageBrowseModal').classList.add('hidden'); document.getElementById('imageBrowseModal').classList.remove('flex'); }
-async function loadImagesFromRoot(root){
- imgBrowserRoot=root; document.getElementById('imgRootInput').value=root;
- const list=document.getElementById('imageBrowseList'); const countEl=document.getElementById('imgCount'); const chips=document.getElementById('imgFolderChips');
- list.innerHTML='<div class="col-span-3 p-8 text-center text-xs text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Scanning '+esc(root)+' ...</div>'; chips.innerHTML='';
- try{
-  const url='api.php?action=list_images&root='+encodeURIComponent(root)+'&recursive='+(imgBrowserRecursive?'1':'0');
-  const r=await fetch(url); const d=await r.json();
-  if(d.error){ list.innerHTML='<div class="col-span-3 p-4 text-center text-xs text-red-500">'+esc(d.error)+'</div>'; return; }
-  allImagesCache=d.images||[]; countEl.textContent=d.count+' images'+(d.count>=300?' (limit 300)':'');
-  if(d.folders && d.folders.length){ let chipHtml=''; d.folders.forEach(f=>{ chipHtml+='<div class="folder-chip" onclick="loadImagesFromRoot(\''+f.replace(/'/g,"\\'")+'\')"><i class="fa-solid fa-folder text-amber-500"></i> '+esc(f.split('/').pop())+'</div>'; }); chips.innerHTML=chipHtml; }
-  if(d.parent && d.parent!==root){ chips.innerHTML='<div class="folder-chip bg-slate-100" onclick="loadImagesFromRoot(\''+d.parent.replace(/'/g,"\\'")+'\')"><i class="fa-solid fa-arrow-up"></i> .. '+esc(d.parent)+'</div>' + chips.innerHTML; }
-  renderFilteredImages('');
- }catch(e){ list.innerHTML='<div class="col-span-3 p-4 text-center text-xs text-red-500">Error: '+e.message+'</div>'; }
-}
-function renderFilteredImages(filter){
- const list=document.getElementById('imageBrowseList');
- let images=allImagesCache;
- if(filter){ const fl=filter.toLowerCase(); images=images.filter(img=> img.name.toLowerCase().includes(fl) || img.path.toLowerCase().includes(fl)); }
- if(!images.length){ list.innerHTML='<div class="col-span-3 p-8 text-center text-xs text-slate-500">No images in '+esc(imgBrowserRoot)+'</div>'; return; }
- let html='';
- images.forEach(img=>{
-   const enc=encodeURIComponent(img.path);
-   const shortName=img.name.length>24?img.name.substring(0,21)+'...':img.name;
-   html+='<div class="border rounded bg-white hover:shadow-lg cursor-pointer overflow-hidden flex flex-col" onclick="selectImagePath(\''+img.path.replace(/'/g,"\\'")+'\')"><img src="api.php?action=image&file='+enc+'" class="w-full h-32 object-cover bg-slate-100" loading="lazy" style="min-height:128px"><div class="p-2 flex-1"><div class="text-[11px] font-medium truncate" title="'+esc(img.path)+'">'+esc(shortName)+'</div><div class="text-[10px] text-slate-400 truncate" title="'+esc(img.path)+'">'+esc(img.path.substring(0,40))+'</div></div></div>';
- });
- list.innerHTML=html;
-}
+// v1.1: Custom Browse Images removed - Windows Picker only.
+function openWindowsPicker(ri,ci){ currentBrowseTarget={ri,ci, isTable:true}; document.getElementById('nativeFileInput').click(); }
 function selectImagePath(path){
- // Normalize slashes for XAMPP: forward slash always
- path = path.replace(/\\/g,'/'); 
- if(currentBrowseTarget && currentBrowseTarget.isTable){
-   const {ri,ci}=currentBrowseTarget; if(ri>=0 && ci>=0){ rows[ri][ci]=path; setDirty(true); renderTable(); }
- } else if(currentBrowseTarget && currentBrowseTarget.input){ currentBrowseTarget.input.value=path; }
- closeImageBrowseModal();
+  path = path.split(String.fromCharCode(92)).join('/');
+  if(currentBrowseTarget && currentBrowseTarget.isTable){
+    const {ri,ci}=currentBrowseTarget; if(ri>=0 && ci>=0){ rows[ri][ci]=path; setDirty(true); renderTable(); }
+  } else if(currentBrowseTarget && currentBrowseTarget.input){ currentBrowseTarget.input.value=path; }
 }
-
 // Native Windows picker upload
-document.getElementById('nativePickerBtn').onclick=()=> document.getElementById('nativeFileInput').click();
+
+
+
+
 document.getElementById('nativeFileInput').onchange=async (e)=>{
  const file=e.target.files[0]; if(!file) return;
- const status=document.getElementById('uploadStatus');
- status.textContent='Uploading '+file.name+' to '+imgBrowserRoot+' ...';
+ showToast('Uploading '+file.name+' ...', 2000);
  const form=new FormData(); form.append('image', file);
  try{
-   const r=await fetch('api.php?action=upload_image&root='+encodeURIComponent(imgBrowserRoot), {method:'POST', body: form});
-   const d=await r.json();
-   if(d.success){
-     status.textContent='Saved: '+d.path;
-     selectImagePath(d.path);
-     loadImagesFromRoot(imgBrowserRoot);
-   } else {
-     status.textContent='Error: '+(d.error||'unknown');
-     alert(d.error);
-   }
- }catch(err){ status.textContent='Upload failed: '+err.message; }
+  const r=await fetch('api.php?action=upload_image&root='+encodeURIComponent(imgBrowserRoot), {method:'POST', body: form});
+  const d=await r.json();
+  if(d.success){ selectImagePath(d.path); showToast('Image picked: '+d.path); }
+  else showToast('Error: '+(d.error||'unknown'), 5000);
+ }catch(err){ showToast('Upload failed: '+err.message, 5000); }
  e.target.value='';
 };
 
@@ -589,7 +564,7 @@ async function saveFile(fmt, isSaveAs){
  }
  const r=await fetch('api.php?action=write',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:target,headers,rows,format:fmt,isCopy})});
  const d=await r.json();
- if(d.success){ if(isCopy){ alert('Copy saved to: '+d.path+'\nOriginal still open: '+currentFile); loadTree(currentRoot); } else { alert('Saved '+d.path+'\nBackup: '+(d.backup||'none')); setDirty(false); if(d.path!==currentFile){ currentFile=d.path; loadTree(currentRoot); } } } else alert(d.error);
+ if(d.success){ if(isCopy){ showToast('Copy saved: '+d.path+' — original still open'); loadTree(currentRoot); } else { showToast('Saved '+d.path+'  •  Backup: '+(d.backup||'none')); setDirty(false); if(d.path!==currentFile){ currentFile=d.path; loadTree(currentRoot); } } } else showToast('Save failed: '+d.error, 5000);
 }
 document.getElementById('saveCsvBtn').onclick=()=>saveFile('csv', false);
 const saveAsBtn=document.getElementById('saveAsBtn'), saveAsMenu=document.getElementById('saveAsMenu');
@@ -615,7 +590,7 @@ document.getElementById('fontDown').onclick=()=>{ fontSize=Math.max(10,fontSize-
 document.getElementById('fontReset').onclick=()=>{ fontSize=13; document.getElementById('csvTable').style.fontSize=fontSize+'px'; };
 document.getElementById('closeAddRow').onclick=closeAddRowModal;
 document.getElementById('cancelAddRow').onclick=closeAddRowModal;
-document.getElementById('addRowModal').onclick=(e)=>{ if(e.target.id==='addRowModal') closeAddRowModal(); };
+backdropClickClose('addRowModal', closeAddRowModal);
 document.getElementById('applyAddRow').onclick=()=>{
  const inputs=document.querySelectorAll('#addRowForm input');
  const newRow=new Array(headers.length).fill('');
@@ -626,36 +601,18 @@ document.getElementById('applyAddRow').onclick=()=>{
  }
  closeAddRowModal();
 };
-document.getElementById('closeImageBrowse').onclick=closeImageBrowseModal;
-document.getElementById('imageBrowseModal').onclick=(e)=>{ if(e.target.id==='imageBrowseModal') closeImageBrowseModal(); };
-document.getElementById('imgPreviewModal').onclick=(e)=>{ if(e.target.id==='imgPreviewModal'){ e.currentTarget.classList.add('hidden'); e.currentTarget.dataset.open=''; } };
+
+backdropClickClose('imgPreviewModal', ()=>{ document.getElementById('imgPreviewModal').classList.add('hidden'); document.getElementById('imgPreviewModal').dataset.open=''; });
+document.getElementById('maxPreviewBtn').onclick=(e)=>{ e.stopPropagation(); toggleMax('previewBox', document.getElementById('maxPreviewBtn')); };
+document.getElementById('maxSlideshowBtn').onclick=(e)=>{ e.stopPropagation(); toggleMax('slideshowBox', document.getElementById('maxSlideshowBtn')); };
 document.getElementById('closePreviewBtn').onclick=()=>{ document.getElementById('imgPreviewModal').classList.add('hidden'); document.getElementById('imgPreviewModal').dataset.open=''; };
-document.getElementById('imgGoBtn').onclick=()=>{ const v=document.getElementById('imgRootInput').value.trim(); if(v) loadImagesFromRoot(v); };
-document.getElementById('imgRootInput').onkeydown=(e)=>{ if(e.key==='Enter'){ const v=e.target.value.trim(); if(v) loadImagesFromRoot(v); } };
-document.getElementById('imgUpBtn').onclick=()=>{
- let cur=document.getElementById('imgRootInput').value.trim()||imgBrowserRoot;
- cur=cur.replace(/\\/g,'/').replace(/\/$/,'');
- const parts=cur.split('/').filter(Boolean); parts.pop();
- let up=parts.join('/');
- if(cur.startsWith('D:')||cur.startsWith('C:')||cur.startsWith('E:')){ if(!up.includes(':')) up=cur.substring(0,2)+'/'; }
- else { up='/'+up; }
- if(up) loadImagesFromRoot(up);
-};
-document.getElementById('imgRecursiveToggle').onclick=(e)=>{
- imgBrowserRecursive=!imgBrowserRecursive;
- e.currentTarget.innerHTML=imgBrowserRecursive?'<i class="fa-solid fa-sitemap mr-1"></i>Recursive: ON':'<i class="fa-solid fa-folder mr-1"></i>Recursive: OFF';
- e.currentTarget.classList.toggle('bg-amber-50', imgBrowserRecursive);
- const cur=document.getElementById('imgRootInput').value.trim()||imgBrowserRoot;
- loadImagesFromRoot(cur);
-};
-document.getElementById('imgFilterInput').oninput=(e)=>{ renderFilteredImages(e.target.value); };
 
 // Global Esc + arrows
 document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); if(currentFile) saveFile('csv', false); else showToast('Open a file first', 2500); return; }
  if(e.key==='Escape'){
    if(document.getElementById('slideshowModal').dataset.open){ closeSlideshow(); e.preventDefault(); return; }
    if(document.getElementById('imgPreviewModal').dataset.open){ document.getElementById('imgPreviewModal').classList.add('hidden'); document.getElementById('imgPreviewModal').dataset.open=''; e.preventDefault(); return; }
-   if(!document.getElementById('imageBrowseModal').classList.contains('hidden')){ closeImageBrowseModal(); e.preventDefault(); return; }
    if(!document.getElementById('manageColsModal').classList.contains('hidden')){ closeManageCols(); e.preventDefault(); return; }
    if(!document.getElementById('addRowModal').classList.contains('hidden')){ closeAddRowModal(); e.preventDefault(); return; }
  }
